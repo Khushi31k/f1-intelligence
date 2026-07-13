@@ -3,20 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: F1 Intelligence API - Race prediction and analytics platform
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: races
+    description: Race calendar and results
+  - name: drivers
+    description: Driver data
+  - name: constructors
+    description: Constructor data
+  - name: predict
+    description: ML Predictions
+  - name: analytics
+    description: Analytics and performance data
+  - name: dataset
+    description: Historical race dataset explorer
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +36,277 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /races:
+    get:
+      operationId: listRaces
+      tags: [races]
+      summary: List all races for a season
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+          description: Season year (defaults to 2024)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Race"
+
+  /drivers:
+    get:
+      operationId: listDrivers
+      tags: [drivers]
+      summary: List all drivers for a season
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Driver"
+
+  /constructors:
+    get:
+      operationId: listConstructors
+      tags: [constructors]
+      summary: List all constructors for a season
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Constructor"
+
+  /predict:
+    post:
+      operationId: runPrediction
+      tags: [predict]
+      summary: Run ML prediction for a specific race
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PredictionRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredictionResult"
+
+  /analytics/driver-performance:
+    get:
+      operationId: getDriverPerformance
+      tags: [analytics]
+      summary: Driver finishing positions over a season
+      parameters:
+        - name: driver
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Driver code e.g. VER
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DriverRaceResult"
+
+  /analytics/constructor-standings:
+    get:
+      operationId: getConstructorStandings
+      tags: [analytics]
+      summary: Constructor championship points progression
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConstructorStandingsPoint"
+
+  /analytics/driver-standings:
+    get:
+      operationId: getDriverStandings
+      tags: [analytics]
+      summary: Driver championship standings
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DriverStanding"
+
+  /analytics/win-percentage:
+    get:
+      operationId: getWinPercentage
+      tags: [analytics]
+      summary: Win percentage by driver for a season
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WinStat"
+
+  /analytics/pole-positions:
+    get:
+      operationId: getPolePositions
+      tags: [analytics]
+      summary: Pole positions by driver for a season
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PoleStat"
+
+  /analytics/circuit-performance:
+    get:
+      operationId: getCircuitPerformance
+      tags: [analytics]
+      summary: Driver performance by circuit over multiple seasons
+      parameters:
+        - name: driver
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CircuitStat"
+
+  /analytics/avg-finish:
+    get:
+      operationId: getAvgFinish
+      tags: [analytics]
+      summary: Average finishing position per driver for a season
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvgFinishStat"
+
+  /dataset:
+    get:
+      operationId: getDataset
+      tags: [dataset]
+      summary: Historical race dataset with search and filter
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search term for driver, team, or circuit
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: driver
+          in: query
+          schema:
+            type: string
+        - name: constructor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +314,292 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+        model_ready:
+          type: boolean
+        data_cached:
+          type: boolean
+      required: [status]
 
+    Race:
+      type: object
+      required: [round, name, circuit, country, date, year]
+      properties:
+        round:
+          type: integer
+        name:
+          type: string
+        circuit:
+          type: string
+        country:
+          type: string
+        date:
+          type: string
+        year:
+          type: integer
+        locality:
+          type: ["string", "null"]
+
+    Driver:
+      type: object
+      required: [code, name, team, number, nationality]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        team:
+          type: string
+        number:
+          type: integer
+        nationality:
+          type: string
+        teamColor:
+          type: ["string", "null"]
+
+    Constructor:
+      type: object
+      required: [id, name, nationality]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        nationality:
+          type: string
+        color:
+          type: ["string", "null"]
+
+    PredictionRequest:
+      type: object
+      required: [year, round]
+      properties:
+        year:
+          type: integer
+        round:
+          type: integer
+        driver:
+          type: ["string", "null"]
+        constructor:
+          type: ["string", "null"]
+
+    PodiumEntry:
+      type: object
+      required: [position, driver, team, confidence]
+      properties:
+        position:
+          type: integer
+        driver:
+          type: string
+        team:
+          type: string
+        confidence:
+          type: number
+        teamColor:
+          type: ["string", "null"]
+
+    FeatureFactor:
+      type: object
+      required: [feature, importance, description]
+      properties:
+        feature:
+          type: string
+        importance:
+          type: number
+        description:
+          type: string
+
+    PredictionResult:
+      type: object
+      required: [year, round, raceName, circuit, predictedWinner, podium, top10, overallConfidence, featureFactors, modelType, whyWin]
+      properties:
+        year:
+          type: integer
+        round:
+          type: integer
+        raceName:
+          type: string
+        circuit:
+          type: string
+        predictedWinner:
+          $ref: "#/components/schemas/PodiumEntry"
+        podium:
+          type: array
+          items:
+            $ref: "#/components/schemas/PodiumEntry"
+        top10:
+          type: array
+          items:
+            $ref: "#/components/schemas/PodiumEntry"
+        overallConfidence:
+          type: number
+        featureFactors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatureFactor"
+        modelType:
+          type: string
+        whyWin:
+          type: array
+          items:
+            type: string
+        strategyNote:
+          type: ["string", "null"]
+
+    DriverRaceResult:
+      type: object
+      required: [round, raceName, position, points, team]
+      properties:
+        round:
+          type: integer
+        raceName:
+          type: string
+        position:
+          type: ["integer", "null"]
+        points:
+          type: number
+        team:
+          type: string
+        teamColor:
+          type: ["string", "null"]
+        fastestLap:
+          type: boolean
+
+    ConstructorStandingsPoint:
+      type: object
+      required: [round, raceName, constructor, points, color]
+      properties:
+        round:
+          type: integer
+        raceName:
+          type: string
+        constructor:
+          type: string
+        points:
+          type: number
+        color:
+          type: ["string", "null"]
+
+    DriverStanding:
+      type: object
+      required: [position, driver, team, points, wins]
+      properties:
+        position:
+          type: integer
+        driver:
+          type: string
+        team:
+          type: string
+        points:
+          type: number
+        wins:
+          type: integer
+        nationality:
+          type: string
+        teamColor:
+          type: ["string", "null"]
+
+    WinStat:
+      type: object
+      required: [driver, wins, races, winPct, team]
+      properties:
+        driver:
+          type: string
+        wins:
+          type: integer
+        races:
+          type: integer
+        winPct:
+          type: number
+        team:
+          type: string
+        teamColor:
+          type: ["string", "null"]
+
+    PoleStat:
+      type: object
+      required: [driver, poles, team]
+      properties:
+        driver:
+          type: string
+        poles:
+          type: integer
+        team:
+          type: string
+        teamColor:
+          type: ["string", "null"]
+
+    CircuitStat:
+      type: object
+      required: [circuit, country, avgPosition, bestPosition, races]
+      properties:
+        circuit:
+          type: string
+        country:
+          type: string
+        avgPosition:
+          type: number
+        bestPosition:
+          type: integer
+        races:
+          type: integer
+        wins:
+          type: integer
+
+    AvgFinishStat:
+      type: object
+      required: [driver, avgPosition, team, races]
+      properties:
+        driver:
+          type: string
+        avgPosition:
+          type: number
+        team:
+          type: string
+        races:
+          type: integer
+        teamColor:
+          type: ["string", "null"]
+
+    DatasetRow:
+      type: object
+      required: [year, round, raceName, circuit, country, driver, team, position, points, gridPosition]
+      properties:
+        year:
+          type: integer
+        round:
+          type: integer
+        raceName:
+          type: string
+        circuit:
+          type: string
+        country:
+          type: string
+        driver:
+          type: string
+        driverCode:
+          type: string
+        team:
+          type: string
+        position:
+          type: ["integer", "null"]
+        points:
+          type: number
+        gridPosition:
+          type: ["integer", "null"]
+        fastestLap:
+          type: boolean
+        lapsCompleted:
+          type: ["integer", "null"]
+        status:
+          type: string
+
+    DatasetResponse:
+      type: object
+      required: [total, rows]
+      properties:
+        total:
+          type: integer
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetRow"

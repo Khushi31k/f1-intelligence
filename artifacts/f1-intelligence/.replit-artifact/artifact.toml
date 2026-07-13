@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "F1 Intelligence"
+version = "1.0.0"
+id = "artifacts/f1-intelligence"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25575
+
+[services.development]
+run = "pnpm --filter @workspace/f1-intelligence run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/f1-intelligence", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/f1-intelligence/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25575"
+BASE_PATH = "/"

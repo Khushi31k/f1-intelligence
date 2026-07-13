@@ -1,45 +1,69 @@
-# [Project name]
+# F1 Intelligence
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+AI-Powered Formula One race prediction and analytics platform. Uses XGBoost trained on historical F1 data to predict race winners, podiums, and outcomes, with interactive charts and a dataset explorer.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `artifacts/f1-intelligence: web` workflow — React + Vite frontend (port auto-assigned, route: `/`)
+- `artifacts/api-server: API Server` workflow — Python FastAPI ML backend (port 8080, route: `/api`)
+- Frontend hits `/api/*` routes via the shared Replit reverse proxy
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- **Frontend**: React + Vite + Tailwind CSS, Wouter routing, Recharts, Framer Motion
+- **Backend**: Python FastAPI + Uvicorn
+- **ML**: XGBoost (scikit-learn pipeline), trained on Jolpica F1 API data (Ergast-compatible)
+- **Data**: Jolpica F1 API (`api.jolpi.ca/ergast/f1/`) — race results, standings, qualifying
+- **Cache**: JSON file cache in `artifacts/api-server/.f1_cache/` (24h TTL)
 
-## Where things live
+## Pages
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `/` — Landing page with F1 track animation and Matrix Green hero
+- `/dashboard` — Season/GP selectors, XGBoost race prediction, 6 interactive analytics charts
+- `/insights` — ML model explanation, feature importance, XGBoost details
+- `/dataset` — Historical race data explorer with search, filter, sort, pagination
+
+## Backend Files
+
+- `artifacts/api-server/main.py` — FastAPI app, routes, lifespan (data warm + model train)
+- `artifacts/api-server/f1_data.py` — F1DataService: fetches + caches all historical data
+- `artifacts/api-server/ml_model.py` — F1Predictor: XGBoost training + prediction + explanations
+
+## Key API Endpoints
+
+- `POST /api/predict` — Run XGBoost prediction for a race (year + round)
+- `GET /api/races?year=2024` — Race calendar
+- `GET /api/drivers?year=2024` — Driver list
+- `GET /api/analytics/driver-performance?driver=VER&year=2024` — Driver finish positions
+- `GET /api/analytics/constructor-standings?year=2024` — Points progression
+- `GET /api/analytics/win-percentage?year=2024` — Win % by driver
+- `GET /api/analytics/pole-positions?year=2024` — Pole stats
+- `GET /api/analytics/circuit-performance?driver=VER` — Driver by circuit
+- `GET /api/analytics/avg-finish?year=2024` — Average finish positions
+- `GET /api/dataset?search=...&year=...` — Dataset explorer (paginated)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Python FastAPI replaces the original Node.js api-server artifact (artifact.toml updated via verifyAndReplaceArtifactToml)
+- No auth — public app, no login required
+- XGBoost trained at startup on 2021-2024 race data (~1,200+ entries); falls back to standings-based prediction if API is rate-limited
+- Jolpica API responses cached to `.f1_cache/` JSON files to avoid rate limiting on repeated calls
+- OpenAPI spec in `lib/api-spec/openapi.yaml` drives codegen for typed React Query hooks
 
-## Product
+## Visual Identity (Telemetry Command DS)
 
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Background: `#131313` (Obsidian dark)
+- Primary: `#00ff41` (Matrix Green)
+- Font: JetBrains Mono (monospaced throughout)
+- ASCII borders, █░ progress bars, terminal aesthetic
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Jolpica F1 API rate-limits at ~50 req/min — startup warm-up intentionally skips missing rounds
+- First startup takes ~15-30s to fetch and cache race data, then train the model
+- `.f1_cache/` persists across restarts; delete it to force a fresh data fetch
+- `pnpm --filter @workspace/api-spec run codegen` must be re-run after any OpenAPI spec changes
 
-## Pointers
+## User preferences
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+_Populate as you build._

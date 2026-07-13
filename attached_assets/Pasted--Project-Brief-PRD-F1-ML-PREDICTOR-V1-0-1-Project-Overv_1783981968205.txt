@@ -1,0 +1,45 @@
+# Project Brief & PRD: F1_ML_PREDICTOR (V1.0)
+## 1. Project Overview
+The **F1_ML_PREDICTOR** is a high-fidelity web interface designed for an F1 race prediction engine. It utilizes a "Command Line" (CLI) aesthetic to provide a technical, developer-centric experience for monitoring race telemetry, configuring ML models, and visualizing race outcomes.
+### Core Vision
+To bridge the gap between complex machine learning outputs and actionable race strategy through a high-contrast, low-latency terminal interface.
+---
+## 2. Target Audience
+- **Data Scientists / ML Engineers**: Users building and tuning F1 prediction models.
+- **Race Strategy Enthusiasts**: Users who want a professional-grade "pit wall" experience.
+- **Frontend Developers**: Building the visual layer for data-heavy motorsport applications.
+---
+## 3. Visual Identity (Telemetry Command DS)
+- **Theme**: Obsidian Dark Mode (Surface: `#131313`).
+- **Primary Color**: Matrix Green (`#00ff41`) for high-contrast readability.
+- **Typography**: JetBrains Mono (Monospaced) to reinforce the terminal aesthetic.
+- **UI Patterns**: ASCII-inspired borders, progress bars, and data grids.
+---
+## 4. Functional Requirements
+### FR1: System Initialization (Boot)
+- Simulate connection to FIA Central Servers.
+- Validate driver statistics and weather engine modules.
+- Provide a scrolling log of system checks to establish technical immersion.
+### FR2: Command Console (Input)
+- Command-line syntax input for model parameters (e.g., `--driver`, `--track`, `--weather`).
+- Quick-action tags for common terminal flags.
+- Display technical summary of input parameters before execution.
+### FR3: Telemetry Analysis (Data)
+- Real-time stream analysis of track temperature, air pressure, and humidity.
+- Historical driver performance buffer using SQL-style queries.
+- Signal synchronization status visualization.
+### FR4: Race Prediction (Output)
+- Predicted podium results with confidence scores.
+- Strategy analysis including tire compounds and estimated pit windows.
+- Critical threshold warnings for hardware/sensor degradation.
+---
+## 5. Technical Integration (Data Strategy)
+*Note: The current UI utilizes high-fidelity placeholder data. Future integration requires:*
+- **Backend**: Python-based API (FastAPI/Flask).
+- **Data Sources**: FastF1 (telemetry), Ergast API (historical results), and Open-Meteo (weather).
+- **ML Logic**: Integration of XGBoost or LSTM models for lap-time and winner prediction.
+---
+## 6. Success Metrics
+- **UX Coherence**: 100% adherence to the CLI aesthetic across all modules.
+- **Data Density**: Ability to display >50 distinct telemetry points without visual clutter.
+- **System Responsiveness**: Perceived "instant" feel for terminal command execution.
