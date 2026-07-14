@@ -1,6 +1,6 @@
 {
   "buildCommand": "pnpm install && pnpm --filter @workspace/f1-intelligence run build",
-  "outputDirectory": "artifacts/f1-intelligence/dist/public",
+  "outputDirectory": "artifacts/f1-intelligence/dist",
   "installCommand": "pnpm install",
   "framework": null,
   "functions": {
