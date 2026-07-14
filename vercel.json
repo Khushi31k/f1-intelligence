@@ -2,15 +2,15 @@
   "buildCommand": "npx vite build --config vite.config.ts",
   "outputDirectory": "dist",
   "functions": {
-    "api/index.py": {
+    "artifacts/f1-intelligence/api/index.py": {
       "runtime": "python3.11",
       "maxDuration": 60,
       "memory": 1024,
-      "includeFiles": "../api-server/**"
+      "includeFiles": "artifacts/api-server/**"
     }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/api/(.*)", "destination": "/artifacts/f1-intelligence/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
