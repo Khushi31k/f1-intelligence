@@ -300,6 +300,7 @@ function CyberpunkSelect({
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const selectedLabel = options.find(o => String(o.value) === String(value))?.label ?? String(value);
 
   const openDropdown = () => {
@@ -311,16 +312,13 @@ function CyberpunkSelect({
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
-      if (btnRef.current && btnRef.current.contains(e.target as Node)) return;
+      // Keep open if click is inside the button or inside the list (incl. scrollbar)
+      if (btnRef.current?.contains(e.target as Node)) return;
+      if (listRef.current?.contains(e.target as Node)) return;
       setOpen(false);
     };
-    const onScroll = () => setOpen(false);
     document.addEventListener('mousedown', close);
-    window.addEventListener('scroll', onScroll, true);
-    return () => {
-      document.removeEventListener('mousedown', close);
-      window.removeEventListener('scroll', onScroll, true);
-    };
+    return () => document.removeEventListener('mousedown', close);
   }, [open]);
 
   const dropdownStyle: React.CSSProperties = rect
@@ -335,13 +333,16 @@ function CyberpunkSelect({
 
   const listEl = open && rect ? ReactDOM.createPortal(
     <ul
+      ref={listRef}
       style={dropdownStyle}
-      className="bg-[#0a0a0a] border border-[#00ff41] shadow-[0_0_18px_rgba(0,255,65,0.3)] max-h-64 overflow-y-auto"
+      className="bg-[#0a0a0a] border border-[#00ff41] shadow-[0_0_18px_rgba(0,255,65,0.3)] overflow-y-scroll"
+      // explicit pixel cap so the list never exceeds the viewport
+      onMouseDown={(e) => e.stopPropagation()}
     >
       {options.map(opt => (
         <li
           key={opt.value}
-          onMouseDown={(e) => { e.preventDefault(); onChange(String(opt.value)); setOpen(false); }}
+          onClick={() => { onChange(String(opt.value)); setOpen(false); }}
           className={`px-3 py-2 text-xs uppercase tracking-wide cursor-pointer transition-colors ${
             String(opt.value) === String(value)
               ? 'bg-[#00ff41]/20 text-[#00ff41]'
