@@ -11,8 +11,14 @@ from typing import Optional, List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
-CACHE_DIR = os.path.join(os.path.dirname(__file__), ".f1_cache")
-os.makedirs(CACHE_DIR, exist_ok=True)
+# Cache directory — use /tmp on read-only filesystems (e.g. Vercel), local dir otherwise
+_default_cache = os.path.join(os.path.dirname(__file__), ".f1_cache")
+try:
+    os.makedirs(_default_cache, exist_ok=True)
+    CACHE_DIR = _default_cache
+except OSError:
+    CACHE_DIR = "/tmp/f1_cache"
+    os.makedirs(CACHE_DIR, exist_ok=True)
 
 BASE_URL = "https://api.jolpi.ca/ergast/f1"
 

@@ -3,7 +3,16 @@
   "outputDirectory": "artifacts/f1-intelligence/dist/public",
   "installCommand": "pnpm install",
   "framework": null,
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.11",
+      "maxDuration": 60,
+      "memory": 1024,
+      "includeFiles": "artifacts/api-server/**"
+    }
+  },
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

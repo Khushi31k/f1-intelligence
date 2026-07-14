@@ -1,0 +1,1 @@
+{"accuracy": 0.5230769230769231, "trained_on_rows": 1299, "feature_names": ["grid_position", "driver_cumulative_points", "team_cumulative_points", "driver_wins", "driver_races", "driver_avg_position", "driver_experience"]}

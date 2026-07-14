@@ -21,19 +21,26 @@ from ml_model import F1Predictor
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global service instances
+# Global service instances — module-level so they persist across warm invocations
 data_service = F1DataService()
-predictor = F1Predictor()
+predictor = F1Predictor()  # auto-loads pre-trained model from disk if available
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: pre-warm data cache and train model"""
-    logger.info("F1 Intelligence API starting up...")
+    """Startup: train model only if not already loaded from pre-trained file"""
+    is_vercel = os.environ.get("VERCEL") == "1"
+    logger.info(f"F1 Intelligence API starting up (vercel={is_vercel}, model_ready={predictor.is_trained})")
     try:
-        data_service.warm_cache()
-        predictor.train(data_service)
-        logger.info("Model trained successfully")
+        if not predictor.is_trained:
+            # No pre-trained model — fetch data and train from scratch
+            # Skip warm_cache on Vercel to avoid cold-start timeout; data loads lazily
+            if not is_vercel:
+                data_service.warm_cache()
+            predictor.train(data_service)
+            logger.info("Model trained from scratch")
+        else:
+            logger.info(f"Pre-trained model active ({predictor.trained_on_rows} rows)")
     except Exception as e:
         logger.warning(f"Startup warm-up failed (non-fatal): {e}")
     yield
@@ -185,7 +192,7 @@ def get_dataset(
 
 
 # ──────────────────────────────────────────────
-# Entry point
+# Entry point (local / Render / non-Vercel)
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":

@@ -12,6 +12,10 @@ logger = logging.getLogger(__name__)
 
 CACHE_DIR = os.path.join(os.path.dirname(__file__), ".f1_cache")
 
+MODEL_DIR = os.path.join(os.path.dirname(__file__), "model")
+MODEL_PATH = os.path.join(MODEL_DIR, "f1_model.ubj")
+MODEL_META_PATH = os.path.join(MODEL_DIR, "f1_meta.json")
+
 
 def _to_python(obj):
     """Recursively convert numpy scalars / arrays to native Python types."""
@@ -37,8 +41,68 @@ class F1Predictor:
         self.model = None
         self.is_trained = False
         self.accuracy = 0.0
-        self.feature_names: List[str] = []
+        self.feature_names: List[str] = [
+            "grid_position",
+            "driver_cumulative_points",
+            "team_cumulative_points",
+            "driver_wins",
+            "driver_races",
+            "driver_avg_position",
+            "driver_experience",
+        ]
         self.trained_on_rows = 0
+        # Auto-load pre-trained model if available (for Vercel / fast cold starts)
+        self._try_load_pretrained()
+
+    # ──────────────────────────────────────────────
+    # Model persistence
+    # ──────────────────────────────────────────────
+
+    def _try_load_pretrained(self) -> bool:
+        """Load a pre-trained model from disk if available."""
+        if not os.path.exists(MODEL_PATH):
+            return False
+        try:
+            import xgboost as xgb
+            self.model = xgb.XGBRegressor()
+            self.model.load_model(MODEL_PATH)
+            # Load metadata
+            if os.path.exists(MODEL_META_PATH):
+                with open(MODEL_META_PATH) as f:
+                    meta = json.load(f)
+                self.accuracy = meta.get("accuracy", 0.0)
+                self.trained_on_rows = meta.get("trained_on_rows", 0)
+                self.feature_names = meta.get("feature_names", self.feature_names)
+            self.is_trained = True
+            logger.info(f"Pre-trained model loaded from {MODEL_PATH} ({self.trained_on_rows} rows)")
+            return True
+        except Exception as e:
+            logger.warning(f"Could not load pre-trained model: {e}")
+            return False
+
+    def save_model(self, path: str = MODEL_PATH) -> bool:
+        """Save trained model and metadata to disk."""
+        if not self.is_trained or self.model is None:
+            return False
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            self.model.save_model(path)
+            meta_path = os.path.join(os.path.dirname(path), "f1_meta.json")
+            with open(meta_path, "w") as f:
+                json.dump({
+                    "accuracy": self.accuracy,
+                    "trained_on_rows": self.trained_on_rows,
+                    "feature_names": self.feature_names,
+                }, f)
+            logger.info(f"Model saved to {path}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save model: {e}")
+            return False
+
+    # ──────────────────────────────────────────────
+    # Training
+    # ──────────────────────────────────────────────
 
     def train(self, data_service) -> bool:
         """Train XGBoost on historical F1 results"""
