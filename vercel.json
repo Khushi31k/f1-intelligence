@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npx vite build --config vite.config.ts",
-  "outputDirectory": "dist",
+  "buildCommand": "cd artifacts/f1-intelligence && npx vite build --config vite.config.ts",
+  "outputDirectory": "artifacts/f1-intelligence/dist",
   "functions": {
     "artifacts/f1-intelligence/api/index.py": {
       "runtime": "python3.11",
