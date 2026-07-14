@@ -328,6 +328,8 @@ function CyberpunkSelect({
         left: rect.left,
         width: rect.width,
         zIndex: 9999,
+        maxHeight: '320px',
+        overflowY: 'scroll',
       }
     : { display: 'none' };
 
