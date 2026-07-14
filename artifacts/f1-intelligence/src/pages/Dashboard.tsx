@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { 
   useListRaces, 
   useRunPrediction,
@@ -297,48 +298,78 @@ function CyberpunkSelect({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const selectedLabel = options.find(o => String(o.value) === String(value))?.label ?? String(value);
+
+  const openDropdown = () => {
+    if (disabled) return;
+    if (btnRef.current) setRect(btnRef.current.getBoundingClientRect());
+    setOpen(o => !o);
+  };
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const close = (e: MouseEvent) => {
+      if (btnRef.current && btnRef.current.contains(e.target as Node)) return;
+      setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const onScroll = () => setOpen(false);
+    document.addEventListener('mousedown', close);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      window.removeEventListener('scroll', onScroll, true);
+    };
   }, [open]);
 
+  const dropdownStyle: React.CSSProperties = rect
+    ? {
+        position: 'fixed',
+        top: rect.bottom + 2,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+      }
+    : { display: 'none' };
+
+  const listEl = open && rect ? ReactDOM.createPortal(
+    <ul
+      style={dropdownStyle}
+      className="bg-[#0a0a0a] border border-[#00ff41] shadow-[0_0_18px_rgba(0,255,65,0.3)] max-h-64 overflow-y-auto"
+    >
+      {options.map(opt => (
+        <li
+          key={opt.value}
+          onMouseDown={(e) => { e.preventDefault(); onChange(String(opt.value)); setOpen(false); }}
+          className={`px-3 py-2 text-xs uppercase tracking-wide cursor-pointer transition-colors ${
+            String(opt.value) === String(value)
+              ? 'bg-[#00ff41]/20 text-[#00ff41]'
+              : 'text-[#00ff41]/60 hover:bg-[#00ff41]/10 hover:text-[#00ff41]'
+          }`}
+          style={{ fontFamily: 'inherit' }}
+        >
+          {opt.label}
+        </li>
+      ))}
+    </ul>,
+    document.body,
+  ) : null;
+
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div className={`relative ${className}`}>
       <button
+        ref={btnRef}
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setOpen(o => !o)}
+        onClick={openDropdown}
         className="w-full flex items-center justify-between gap-2 bg-[#0a0a0a] border border-[#00ff41] text-[#00ff41] px-3 py-2 text-xs uppercase tracking-wide focus:outline-none hover:shadow-[0_0_8px_rgba(0,255,65,0.45)] focus:shadow-[0_0_8px_rgba(0,255,65,0.45)] transition-shadow disabled:opacity-40 disabled:cursor-not-allowed"
         style={{ fontFamily: 'inherit', borderRadius: 0 }}
       >
         <span className="truncate">{disabled ? 'LOADING...' : selectedLabel}</span>
         <ChevronRight className={`w-3 h-3 flex-shrink-0 transition-transform duration-150 ${open ? 'rotate-90' : ''}`} />
       </button>
-      {open && (
-        <ul className="absolute z-50 w-full top-full left-0 mt-px bg-[#0a0a0a] border border-[#00ff41] shadow-[0_0_18px_rgba(0,255,65,0.25)] max-h-64 overflow-y-auto">
-          {options.map(opt => (
-            <li
-              key={opt.value}
-              onClick={() => { onChange(String(opt.value)); setOpen(false); }}
-              className={`px-3 py-2 text-xs uppercase tracking-wide cursor-pointer transition-colors ${
-                String(opt.value) === String(value)
-                  ? 'bg-[#00ff41]/20 text-[#00ff41]'
-                  : 'text-[#00ff41]/60 hover:bg-[#00ff41]/10 hover:text-[#00ff41]'
-              }`}
-              style={{ fontFamily: 'inherit' }}
-            >
-              {opt.label}
-            </li>
-          ))}
-        </ul>
-      )}
+      {listEl}
     </div>
   );
 }
