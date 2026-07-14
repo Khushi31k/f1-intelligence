@@ -1,12 +1,12 @@
 {
-  "buildCommand": "pnpm install && pnpm --filter @workspace/f1-intelligence run build && cp -r artifacts/f1-intelligence/dist dist",
+  "buildCommand": "npx vite build --config vite.config.ts",
   "outputDirectory": "dist",
   "functions": {
     "api/index.py": {
       "runtime": "python3.11",
       "maxDuration": 60,
       "memory": 1024,
-      "includeFiles": "artifacts/api-server/**"
+      "includeFiles": "../api-server/**"
     }
   },
   "rewrites": [
