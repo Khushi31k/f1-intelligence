@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm --filter @workspace/f1-intelligence run build",
-  "outputDirectory": "artifacts/f1-intelligence/dist",
+  "buildCommand": "pnpm install && pnpm --filter @workspace/f1-intelligence run build && cp -r artifacts/f1-intelligence/dist dist",
+  "outputDirectory": "dist",
   "functions": {
     "api/index.py": {
       "runtime": "python3.11",
