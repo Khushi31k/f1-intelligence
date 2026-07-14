@@ -13,6 +13,25 @@ logger = logging.getLogger(__name__)
 CACHE_DIR = os.path.join(os.path.dirname(__file__), ".f1_cache")
 
 
+def _to_python(obj):
+    """Recursively convert numpy scalars / arrays to native Python types."""
+    try:
+        import numpy as np
+        if isinstance(obj, (np.integer,)):
+            return int(obj)
+        if isinstance(obj, (np.floating,)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+    except ImportError:
+        pass
+    if isinstance(obj, dict):
+        return {k: _to_python(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_python(v) for v in obj]
+    return obj
+
+
 class F1Predictor:
     def __init__(self):
         self.model = None
@@ -224,19 +243,19 @@ class F1Predictor:
             # Rank by predicted position (lower = better)
             ranked = sorted(
                 zip(entries, predicted_positions),
-                key=lambda x: x[1]
+                key=lambda x: float(x[1])
             )
 
             # Calculate confidence scores (inverse of predicted position spread)
-            max_pos = max(p for _, p in ranked)
-            min_pos = min(p for _, p in ranked)
-            spread = max(max_pos - min_pos, 1)
+            max_pos = float(max(p for _, p in ranked))
+            min_pos = float(min(p for _, p in ranked))
+            spread = max(max_pos - min_pos, 1.0)
 
             def confidence(pred_pos: float, rank: int) -> float:
                 # Higher confidence for lower predicted position
-                raw = max(0, (1 - (pred_pos - min_pos) / spread))
+                raw = max(0.0, (1.0 - (float(pred_pos) - min_pos) / spread))
                 # Decay by rank
-                base = raw * (1 - rank * 0.03)
+                base = raw * (1.0 - rank * 0.03)
                 return round(max(0.15, min(0.99, base)), 3)
 
             # Build top 10
@@ -280,7 +299,7 @@ class F1Predictor:
                 sum(e["confidence"] for e in top10) / len(top10), 3
             ) if top10 else 0.5
 
-            return {
+            result = {
                 "year": year,
                 "round": round_num,
                 "raceName": race.get("name", f"Round {round_num}"),
@@ -294,6 +313,7 @@ class F1Predictor:
                 "whyWin": why_win,
                 "strategyNote": self._strategy_note(ranked[0][0] if ranked else {}, race),
             }
+            return _to_python(result)
 
         except Exception as e:
             logger.error(f"Prediction error: {e}")
