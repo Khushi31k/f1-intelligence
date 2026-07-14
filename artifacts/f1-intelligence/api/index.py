@@ -9,8 +9,8 @@ import os
 
 # Make the api-server package importable from within the Vercel function bundle.
 # At runtime Vercel places bundled files under /var/task/, so this resolves to
-# /var/task/api-server — included via includeFiles in vercel.json.
-_api_server = os.path.join(os.path.dirname(__file__), "..", "api-server")
+# /var/task/artifacts/api-server — included via includeFiles in vercel.json.
+_api_server = os.path.join(os.path.dirname(__file__), "..", "..", "api-server")
 sys.path.insert(0, os.path.abspath(_api_server))
 
 # Import the FastAPI ASGI app — Vercel serves it automatically
