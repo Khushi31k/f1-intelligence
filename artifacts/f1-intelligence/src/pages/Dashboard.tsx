@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   useListRaces, 
   useRunPrediction,
@@ -47,41 +47,24 @@ export default function Dashboard() {
         <div className="flex flex-col md:flex-row gap-4 items-end">
           <div className="flex flex-col gap-2 flex-1 w-full">
             <label className="text-xs opacity-70 uppercase">TARGET_SEASON_</label>
-            <div className="flex items-center bg-background border border-primary/50 focus-within:border-primary px-2 transition-colors">
-              <ChevronRight className="w-4 h-4 opacity-50" />
-              <select 
-                value={selectedYear}
-                onChange={(e) => {
-                  setSelectedYear(Number(e.target.value));
-                  setSelectedRound(1);
-                }}
-                className="bg-background text-primary w-full p-2 focus:outline-none appearance-none"
-              >
-                {[2022, 2023, 2024].map(y => (
-                  <option key={y} value={y}>{y} SEASON</option>
-                ))}
-              </select>
-            </div>
+            <CyberpunkSelect
+              value={selectedYear}
+              onChange={(v) => { setSelectedYear(Number(v)); setSelectedRound(1); }}
+              options={[2022, 2023, 2024].map(y => ({ value: y, label: `${y} SEASON` }))}
+            />
           </div>
 
           <div className="flex flex-col gap-2 flex-1 w-full">
             <label className="text-xs opacity-70 uppercase">TARGET_GRAND_PRIX_</label>
-            <div className="flex items-center bg-background border border-primary/50 focus-within:border-primary px-2 transition-colors">
-              <ChevronRight className="w-4 h-4 opacity-50" />
-              <select 
-                value={selectedRound}
-                onChange={(e) => setSelectedRound(Number(e.target.value))}
-                className="bg-background text-primary w-full p-2 focus:outline-none appearance-none"
-                disabled={racesLoading}
-              >
-                {racesLoading && <option>LOADING_RACES...</option>}
-                {!racesLoading && races?.map((r: any) => (
-                  <option key={r.round} value={r.round}>
-                    R{r.round.toString().padStart(2, '0')} : {r.name.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <CyberpunkSelect
+              value={selectedRound}
+              onChange={(v) => setSelectedRound(Number(v))}
+              disabled={racesLoading}
+              options={(races as any[] || []).map((r: any) => ({
+                value: r.round,
+                label: `R${String(r.round).padStart(2, '0')} : ${r.name.toUpperCase()}`,
+              }))}
+            />
           </div>
 
           <button 
@@ -294,6 +277,72 @@ export default function Dashboard() {
   );
 }
 
+// ─── Monochromatic green palette — brightest first ───────────────────────────
+const GREEN_SHADES = [
+  '#00ff41', '#00eb3c', '#00d836', '#00c431', '#00b02b',
+  '#009c26', '#008820', '#00741b', '#006015', '#004c10',
+];
+function greenShade(index: number): string {
+  return GREEN_SHADES[Math.min(index, GREEN_SHADES.length - 1)];
+}
+
+// ─── Fully-themed cyberpunk dropdown ─────────────────────────────────────────
+function CyberpunkSelect({
+  value, onChange, options, disabled = false, className = '',
+}: {
+  value: string | number;
+  onChange: (val: string) => void;
+  options: { value: string | number; label: string }[];
+  disabled?: boolean;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selectedLabel = options.find(o => String(o.value) === String(value))?.label ?? String(value);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className={`relative ${className}`}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setOpen(o => !o)}
+        className="w-full flex items-center justify-between gap-2 bg-[#0a0a0a] border border-[#00ff41] text-[#00ff41] px-3 py-2 text-xs uppercase tracking-wide focus:outline-none hover:shadow-[0_0_8px_rgba(0,255,65,0.45)] focus:shadow-[0_0_8px_rgba(0,255,65,0.45)] transition-shadow disabled:opacity-40 disabled:cursor-not-allowed"
+        style={{ fontFamily: 'inherit', borderRadius: 0 }}
+      >
+        <span className="truncate">{disabled ? 'LOADING...' : selectedLabel}</span>
+        <ChevronRight className={`w-3 h-3 flex-shrink-0 transition-transform duration-150 ${open ? 'rotate-90' : ''}`} />
+      </button>
+      {open && (
+        <ul className="absolute z-50 w-full top-full left-0 mt-px bg-[#0a0a0a] border border-[#00ff41] shadow-[0_0_18px_rgba(0,255,65,0.25)] max-h-64 overflow-y-auto">
+          {options.map(opt => (
+            <li
+              key={opt.value}
+              onClick={() => { onChange(String(opt.value)); setOpen(false); }}
+              className={`px-3 py-2 text-xs uppercase tracking-wide cursor-pointer transition-colors ${
+                String(opt.value) === String(value)
+                  ? 'bg-[#00ff41]/20 text-[#00ff41]'
+                  : 'text-[#00ff41]/60 hover:bg-[#00ff41]/10 hover:text-[#00ff41]'
+              }`}
+              style={{ fontFamily: 'inherit' }}
+            >
+              {opt.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // ─── Chart Components ────────────────────────────────────────────────────────
 
 function AnalyticsChart1({ year, selectedDriver, setSelectedDriver, drivers }: {
@@ -304,15 +353,12 @@ function AnalyticsChart1({ year, selectedDriver, setSelectedDriver, drivers }: {
     <ASCIIBox title="DRIVER_PERFORMANCE_OVER_TIME">
       <div className="flex justify-between items-center mb-4 text-xs">
         <span className="opacity-70 uppercase">FINISHING_POSITION_BY_ROUND</span>
-        <select
+        <CyberpunkSelect
           value={selectedDriver}
-          onChange={(e) => setSelectedDriver(e.target.value)}
-          className="bg-transparent border border-primary/50 text-primary p-1 focus:outline-none"
-        >
-          {drivers.map((d: any) => (
-            <option key={d.code} value={d.code}>{d.code} - {d.name}</option>
-          ))}
-        </select>
+          onChange={(v) => setSelectedDriver(v)}
+          options={drivers.map((d: any) => ({ value: d.code, label: `${d.code} - ${d.name}` }))}
+          className="w-48"
+        />
       </div>
       <div className="h-[250px]">
         {isLoading ? (
@@ -373,8 +419,8 @@ function AnalyticsChart2({ year }: { year: number }) {
                 cursor={{ fill: 'rgba(0,255,65,0.1)' }}
               />
               <Bar dataKey="points">
-                {chartData.map((entry: any, index: number) => (
-                  <Cell key={`cell-${index}`} fill={entry.color || "#00ff41"} />
+                {chartData.map((_: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={greenShade(index)} />
                 ))}
               </Bar>
             </BarChart>
@@ -404,8 +450,8 @@ function AnalyticsChart3({ year }: { year: number }) {
                 cursor={{ fill: 'rgba(0,255,65,0.1)' }}
               />
               <Bar dataKey="winPct">
-                {(data as any)?.slice(0, 8).map((entry: any, index: number) => (
-                  <Cell key={`cell-${index}`} fill={entry.teamColor || "#00ff41"} />
+                {(data as any)?.slice(0, 8).map((_: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={greenShade(index)} />
                 ))}
               </Bar>
             </BarChart>
@@ -435,8 +481,8 @@ function AnalyticsChart4({ year }: { year: number }) {
                 cursor={{ fill: 'rgba(0,255,65,0.1)' }}
               />
               <Bar dataKey="poles">
-                {(data as any)?.slice(0, 8).map((entry: any, index: number) => (
-                  <Cell key={`cell-${index}`} fill={entry.teamColor || "#00ff41"} />
+                {(data as any)?.slice(0, 8).map((_: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={greenShade(index)} />
                 ))}
               </Bar>
             </BarChart>
@@ -501,8 +547,8 @@ function AnalyticsChart6({ year }: { year: number }) {
                 cursor={{ fill: 'rgba(0,255,65,0.1)' }}
               />
               <Bar dataKey="avgPosition">
-                {sorted.map((entry: any, index: number) => (
-                  <Cell key={`cell-${index}`} fill={entry.teamColor || "#00ff41"} />
+                {sorted.map((_: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={greenShade(index)} />
                 ))}
               </Bar>
             </BarChart>
